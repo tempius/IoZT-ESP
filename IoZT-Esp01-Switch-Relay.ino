@@ -15,17 +15,14 @@ byte relOFF[] = {0xA0, 0x01, 0x00, 0xA1}; //Hex command to send to serial for cl
 /* FLAGS de Controlo */
 int relayState = LOW;
 int relayLastState = LOW;
-int rxPinLastState = LOW;
+int httmPinLastState = LOW;
 
 /* constantes */
 const char *wifiName = "ESP-01#01";
 const char *wifiPass = "esp8266-01";
 int txPin = 1; //Tx = GPIO 1
-int rxPin = 3; //Rx = GPIO 3
-int gpio = 0;
-
-unsigned long previousMillis = 0; // last time update
-long interval = 5000;             // interval at which to do something (milliseconds)
+int httmOut = 3; // GPIO 3 = Rx - receives signal from httm
+int httmVcc = 0; //GPIO 0 - used to power up the httm
 
 // Create an instance of the server
 std::unique_ptr<ESP8266WebServer> server_manager;
@@ -59,7 +56,7 @@ void handleScan()
 
 void handleOn()
 {
-  debugln("ESP ON");
+  debugln("ESP RELAY ON");
   relayState = HIGH;
 
   StaticJsonBuffer<200> jsonBuffer;
@@ -73,13 +70,13 @@ void handleOn()
 
 void handleOff()
 {
-  debugln("ESP OFF");
+  debugln("ESP RELAY OFF");
   relayState = LOW;
   // Reset httm
-  digitalWrite(gpio, LOW);
+  digitalWrite(httmVcc, LOW);
   delay(1);
-  rxPinLastState = digitalRead(rxPin);
-  digitalWrite(gpio, HIGH);
+  httmPinLastState = digitalRead(httmOut);
+  digitalWrite(httmVcc, HIGH);
 
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject &jsonObj = jsonBuffer.createObject();
@@ -92,7 +89,7 @@ void handleOff()
 
 void handleNotFound()
 {
-  String message = "Nao encontrado\n\n";
+  String message = "Not Found\n\n";
   message += "URI: ";
   message += server_manager->uri();
   message += "\nMethod: ";
@@ -183,7 +180,7 @@ void setup()
   }
 
   //if you get here you have connected to the WiFi
-  debugln("connected...yeey :)");
+  debugln("connected...");
 
   webSocket.begin();                 // start the websocket server
   webSocket.onEvent(webSocketEvent); // if there's an incomming websocket message, go to function 'webSocketEvent'
@@ -199,25 +196,14 @@ void setup()
   server_manager->onNotFound(handleNotFound);
   server_manager->begin();
 
-  // debugln("HTTP server started");
-  // IPAddress serverIP = WiFi.localIP();
-  // debug("SERVER IP address: ");
-  // debugln(String(serverIP));
-
-  // debugln("HTTP server status");
-  // IPAddress myIP = WiFi.softAPIP();
-  // debug("AP IP address: ");
-  // debugln(String(myIP));
-  // debugln(server_manager->client().remoteIP().toString());
-
   /* INPUTS */
 
-  /* alimentar o sensor httm */
-  pinMode(gpio, OUTPUT);
-  digitalWrite(gpio, HIGH);
+  /* httm power */
+  pinMode(httmVcc, OUTPUT);
+  digitalWrite(httmVcc, HIGH);
 
-  /* sinal do sensor httm */
-  pinMode(rxPin, INPUT);
+  /* signal from httm */
+  pinMode(httmOut, INPUT);
 
   /* led do esp-01 */
   //pinMode(BUILTIN_LED, OUTPUT);
@@ -226,25 +212,17 @@ void setup()
 
 void loop()
 {
-  //verificar de tempos a tempos os clients
-  // unsigned long currentMillis = millis();
-  // if (currentMillis - previousMillis > interval)
-  // {
-  //   previousMillis = currentMillis;
-  //   debugln("websockets connected: " + String(webSocket.connectedClients(true)));
-  // }
-
   // constantly check for websocket events
   webSocket.loop();
 
-  // put your main code here, to run repeatedly:
+  // constantly check for http requests
   server_manager->handleClient();
 
-checkGPIO:
-  if (rxPinLastState != digitalRead(rxPin))
+checkHttmSignal:
+  if (httmPinLastState != digitalRead(httmOut))
   {
-    rxPinLastState = digitalRead(rxPin);
-    relayState = digitalRead(rxPin);
+    httmPinLastState = digitalRead(httmOut);
+    relayState = digitalRead(httmOut);
   }
   if (relayState == HIGH && relayState != relayLastState)
   {
