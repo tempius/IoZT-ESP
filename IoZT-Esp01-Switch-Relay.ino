@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 #include <WebSocketsServer.h>
 
-//#define DEBUG
+#define DEBUG
 #define BUILTIN_LED 1
 
 byte relON[] = {0xA0, 0x01, 0x01, 0xA2};  //Hex command to send to serial for open relay
@@ -16,11 +16,12 @@ byte relOFF[] = {0xA0, 0x01, 0x00, 0xA1}; //Hex command to send to serial for cl
 int relayState = LOW;
 int relayLastState = LOW;
 int httmPinLastState = LOW;
+int connectionTimeout = 180;
 
 /* constantes */
 const char *wifiName = "ESP-01#01";
 const char *wifiPass = "esp8266-01";
-int txPin = 1; //Tx = GPIO 1
+int txPin = 1;   //Tx = GPIO 1
 int httmOut = 3; // GPIO 3 = Rx - receives signal from httm
 int httmVcc = 2; //GPIO 2 - used to power up the httm
 
@@ -49,7 +50,7 @@ void handleScan()
   jsonObj["port"] = 81;
   jsonObj["actionI"] = "on";
   jsonObj["actionO"] = "off";
-  
+
   jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
   server_manager->send(200, "application/json", JSONmessageBuffer);
 }
@@ -165,7 +166,7 @@ void setup()
   wifiManager.setAPCallback(configModeCallback);
 
   //sets timeout for which to attempt connecting, useful if you get a lot of failed connects
-  wifiManager.setConnectTimeout(180); //segundos
+  wifiManager.setConnectTimeout(connectionTimeout); //segundos
 
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point with the specified name
@@ -210,8 +211,21 @@ void setup()
   //digitalWrite(BUILTIN_LED, HIGH);
 }
 
+void checkConnection()
+{
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    debugln("no connection...");
+    ESP.restart(); //ESP.reset();
+    delay(2000);
+  }
+}
+
 void loop()
 {
+  // check connection
+  checkConnection();
+
   // constantly check for websocket events
   webSocket.loop();
 
