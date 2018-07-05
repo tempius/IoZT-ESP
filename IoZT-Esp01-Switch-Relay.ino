@@ -22,7 +22,7 @@ const char *wifiName = "ESP-01#01";
 const char *wifiPass = "esp8266-01";
 int txPin = 1; //Tx = GPIO 1
 int httmOut = 3; // GPIO 3 = Rx - receives signal from httm
-int httmVcc = 0; //GPIO 0 - used to power up the httm
+int httmVcc = 2; //GPIO 2 - used to power up the httm
 
 // Create an instance of the server
 std::unique_ptr<ESP8266WebServer> server_manager;
