@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 #include <WebSocketsServer.h>
 
-#define DEBUG
+// #define DEBUG
 #define BUILTIN_LED 1
 
 byte relON[] = {0xA0, 0x01, 0x01, 0xA2};  //Hex command to send to serial for open relay
