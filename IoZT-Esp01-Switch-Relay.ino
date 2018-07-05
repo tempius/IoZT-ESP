@@ -12,18 +12,19 @@
 
 byte relON[] = {0xA0, 0x01, 0x01, 0xA2};  //Hex command to send to serial for open relay
 byte relOFF[] = {0xA0, 0x01, 0x00, 0xA1}; //Hex command to send to serial for close relay
-/* FLAGS de Controlo */
+/* control FLAGS */
 int relayState = LOW;
 int relayLastState = LOW;
 int httmPinLastState = LOW;
 int connectionTimeout = 180;
 
-/* constantes */
+/* vars */
 const char *wifiName = "ESP-01#01";
 const char *wifiPass = "esp8266-01";
-int txPin = 1;   //Tx = GPIO 1
-int httmOut = 3; // GPIO 3 = Rx - receives signal from httm
-int httmVcc = 2; //GPIO 2 - used to power up the httm
+int txPin = 1;    // GPIO 1 = Tx - used for serial
+int httmOut = 3;  // GPIO 3 = Rx - receives signal from httm
+int httmVcc = 2;  // GPIO 2 - used to power up the httm
+int relayPin = 0; // GPIO 0 - used to power up the relay
 
 // Create an instance of the server
 std::unique_ptr<ESP8266WebServer> server_manager;
@@ -205,8 +206,12 @@ void setup()
 
   /* signal from httm */
   pinMode(httmOut, INPUT);
+  
+  /* relay */
+  pinMode(relayPin, OUPUT);
+  digitalWrite(relayPin, LOW);
 
-  /* led do esp-01 */
+  /* ESP-01 LED */
   //pinMode(BUILTIN_LED, OUTPUT);
   //digitalWrite(BUILTIN_LED, HIGH);
 }
@@ -241,15 +246,17 @@ checkHttmSignal:
   if (relayState == HIGH && relayState != relayLastState)
   {
     relayLastState = relayState;
-    Serial.write(relON, sizeof(relON)); // turns the relay ON
-    //digitalWrite(BUILTIN_LED, LOW);
+    // turns the relay ON
+    Serial.write(relON, sizeof(relON));
+    digitalWrite(relayPin, HIGH);
     webSocket.broadcastTXT("on");
   }
   else if (relayState == LOW && relayState != relayLastState)
   {
     relayLastState = relayState;
-    Serial.write(relOFF, sizeof(relOFF)); // turns the relay OFF
-    //digitalWrite(BUILTIN_LED, HIGH);
+    // turns the relay OFF
+    Serial.write(relOFF, sizeof(relOFF));
+    digitalWrite(relayPin, LOW);
     webSocket.broadcastTXT("off");
   }
 }
