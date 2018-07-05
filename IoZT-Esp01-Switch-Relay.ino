@@ -208,7 +208,7 @@ void setup()
   pinMode(httmOut, INPUT);
   
   /* relay */
-  pinMode(relayPin, OUPUT);
+  pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, LOW);
 
   /* ESP-01 LED */
