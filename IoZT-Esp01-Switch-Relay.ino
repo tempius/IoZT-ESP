@@ -19,8 +19,9 @@ int httmPinLastState = LOW;
 int connectionTimeout = 180;
 
 /* vars */
-const char *wifiName = "ESP-01#01";
-const char *wifiPass = "esp8266-01";
+String wifiNameString = "IOZT-ESP01#" + String(ESP.getChipId());
+const char *wifiName = wifiNameString.c_str();
+const char *wifiPass = "iozt-esp01";
 int txPin = 1;    // GPIO 1 = Tx - used for serial
 int httmOut = 3;  // GPIO 3 = Rx - receives signal from httm
 int httmVcc = 2;  // GPIO 2 - used to power up the httm
@@ -33,7 +34,7 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 void handleRoot()
 {
   debugln("ESP ROOT");
-  server_manager->send(200, "text/plain", String(wifiName));
+  server_manager->send(200, "text/plain", wifiNameString);
 }
 
 void handleScan()
@@ -45,7 +46,7 @@ void handleScan()
   char JSONmessageBuffer[200];
 
   jsonObj["componentType"] = "switch";
-  jsonObj["componentName"] = String(wifiName);
+  jsonObj["componentName"] = wifiNameString;
   jsonObj["protocol"] = "ws";
   jsonObj["address"] = "";
   jsonObj["port"] = 81;
@@ -206,7 +207,7 @@ void setup()
 
   /* signal from httm */
   pinMode(httmOut, INPUT);
-  
+
   /* relay */
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, LOW);
