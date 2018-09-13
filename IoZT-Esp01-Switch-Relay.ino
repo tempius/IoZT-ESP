@@ -212,6 +212,11 @@ void setup()
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, LOW);
 
+  /* set init states */
+  httmPinLastState = digitalRead(httmOut);
+  relayState = digitalRead(httmOut);
+  relayLastState = relayState;
+
   /* ESP-01 LED */
   //pinMode(BUILTIN_LED, OUTPUT);
   //digitalWrite(BUILTIN_LED, HIGH);
@@ -241,6 +246,7 @@ void loop()
 checkHttmSignal:
   if (httmPinLastState != digitalRead(httmOut))
   {
+    debugln("pin state changed...");
     httmPinLastState = digitalRead(httmOut);
     relayState = digitalRead(httmOut);
   }
