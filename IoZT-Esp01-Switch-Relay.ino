@@ -113,7 +113,7 @@ void handleOff()
 
   // Reset httm
   digitalWrite(httmVcc, LOW);
-  delay(1);
+  delay(50);
   httmPinLastState = digitalRead(httmOut);
   digitalWrite(httmVcc, HIGH);
 
@@ -149,7 +149,7 @@ void handleOff2()
 
   // Reset httm 2
   digitalWrite(httm2Vcc, LOW);
-  delay(1);
+  delay(50);
   httm2PinLastState = digitalRead(httm2Out);
   digitalWrite(httm2Vcc, HIGH);
 
