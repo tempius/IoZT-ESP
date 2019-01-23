@@ -4,23 +4,6 @@
 // Create an instance of the server
 WebSocketsServer webSocket = WebSocketsServer(81);
 
-void setupWebSocketsServer()
-{
-    webSocket.begin();                 // start the websocket server
-    webSocket.onEvent(webSocketEvent); // if there's an incomming websocket message, go to function 'webSocketEvent'
-    Serial.println("WebSocket server started.");
-}
-
-void handleWebSockets()
-{
-    webSocket.loop();
-}
-
-void handleWebSocketsBroadcast(String msg)
-{
-    webSocket.broadcastTXT(msg);
-}
-
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 {
     switch (type)
@@ -65,4 +48,21 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         break;
     }
     }
+}
+
+void setupWebSocketsServer()
+{
+    webSocket.begin();                 // start the websocket server
+    webSocket.onEvent(webSocketEvent); // if there's an incomming websocket message, go to function 'webSocketEvent'
+    Serial.println("WebSocket server started.");
+}
+
+void handleWebSockets()
+{
+    webSocket.loop();
+}
+
+void handleWebSocketsBroadcast(String msg)
+{
+    webSocket.broadcastTXT(msg);
 }

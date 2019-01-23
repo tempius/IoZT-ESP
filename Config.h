@@ -4,10 +4,9 @@
 #include <DNSServer.h>
 #include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
 #include <WebSocketsServer.h>
-#include <ArduinoJson.h>
 #include <ESP8266WebServer.h>
-
-#define FIRMWARE_VERSION 1.0.2
+#include <ESP8266mDNS.h>
+#include <ArduinoJson.h>
 
 byte relON[] = {0xA0, 0x01, 0x01, 0xA2};  //Hex command to send to serial for open relay
 byte relOFF[] = {0xA0, 0x01, 0x00, 0xA1}; //Hex command to send to serial for close relay
