@@ -1,4 +1,6 @@
+//needed for library
 #include <ESP8266WebServer.h>
+#include <ArduinoJson.h>
 
 // Create an instance of the server
 std::unique_ptr<ESP8266WebServer> server_manager;
@@ -12,77 +14,18 @@ void setupWebserver()
   Serial.print(myIP);
   Serial.println();
   server_manager->on("/", handleRoot);
-  server_manager->on("/on", handleOn);
-  server_manager->on("/off", handleOff);
-#ifdef defined(ESP_SWITCH)
+
+#if defined(BUTTON)
+  server_manager->on("/scan", handleScanButton);
+#elif defined(SWITCH)
   server_manager->on("/scan", handleScanSwitch);
-#elif defined(ESP_DOUBLE_SWITCH)
-  server_manager->on("/on2", handleOn2);
-  server_manager->on("/off2", handleOff2);
+#elif defined(DOUBLE_SWITCH)
   server_manager->on("/scan", handleScanDoubleSwitch);
 #endif
+
   server_manager->on("/reset", handleReset);
   server_manager->onNotFound(handleNotFound);
   server_manager->begin();
-}
-
-void handleClient()
-{
-  // constantly check for http requests
-  server_manager->handleClient();
-}
-
-void handleScanSwitch()
-{
-  Serial.println("ESP SCAN");
-  StaticJsonBuffer<250> jsonBuffer;
-  JsonObject &jsonObj = jsonBuffer.createObject();
-  char JSONmessageBuffer[250];
-
-  jsonObj["componentType"] = "switch";
-  jsonObj["componentName"] = wifiNameString;
-  jsonObj["protocol"] = "ws";
-  jsonObj["address"] = "";
-  jsonObj["port"] = 81;
-  jsonObj["actionI"] = "on";
-  jsonObj["actionO"] = "off";
-
-  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
-  handleServerHeaders();
-  server_manager->send(200, "application/json", JSONmessageBuffer);
-}
-
-void handleScanDoubleSwitch()
-{
-  Serial.println("ESP SCAN");
-  StaticJsonBuffer<250> jsonBuffer;
-  JsonObject &jsonObj = jsonBuffer.createObject();
-  char JSONmessageBuffer[250];
-
-  jsonObj["componentType"] = "double switch";
-  jsonObj["componentName"] = wifiNameString;
-  jsonObj["protocol"] = "ws";
-  jsonObj["address"] = "";
-  jsonObj["port"] = 81;
-  jsonObj["actionI"] = "on";
-  jsonObj["actionO"] = "off";
-  jsonObj["actionI2"] = "on2";
-  jsonObj["actionO2"] = "off2";
-
-  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
-  handleServerHeaders();
-  server_manager->send(200, "application/json", JSONmessageBuffer);
-}
-
-void handleServerHeaders()
-{
-  // if (server_manager->method() == HTTP_OPTIONS)
-  // {
-  server_manager->sendHeader("Access-Control-Allow-Origin", "*");
-  server_manager->sendHeader("Access-Control-Max-Age", "10000");
-  server_manager->sendHeader("Access-Control-Allow-Methods", "PUT,POST,GET,OPTIONS");
-  server_manager->sendHeader("Access-Control-Allow-Headers", "*");
-  // }
 }
 
 /* Just a little test message.  Go to http://192.168.4.1 in a web browser
@@ -91,8 +34,16 @@ void handleServerHeaders()
 void handleRoot()
 {
   Serial.println("ESP ROOT");
+
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject &jsonObj = jsonBuffer.createObject();
+  char JSONmessageBuffer[200];
+
+  jsonObj["wifi"] = wifiNameString;
+  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+
   handleServerHeaders();
-  server_manager->send(200, "text/plain", wifiNameString);
+  server_manager->send(200, "application/json", JSONmessageBuffer);
 }
 
 void handleReset()
@@ -101,83 +52,9 @@ void handleReset()
   handleServerHeaders();
   server_manager->send(200, "text/plain", "ESP RESET");
   delay(2000);
-  WiFiManager wifiManager;
-  //reset WIFI settings
-  wifiManager.resetSettings();
+  handleWifiManagerReset();
   ESP.restart(); //ESP.reset();
   delay(2000);
-}
-
-void handleOn()
-{
-  Serial.println("ESP RELAY ON");
-  relayState = HIGH;
-
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject &jsonObj = jsonBuffer.createObject();
-  char JSONmessageBuffer[200];
-
-  jsonObj["state"] = true;
-  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
-  handleServerHeaders();
-  server_manager->send(200, "application/json", JSONmessageBuffer);
-}
-
-void handleOff()
-{
-  Serial.println("ESP RELAY OFF");
-  relayState = LOW;
-
-  // Reset httm
-  digitalWrite(httmVcc, LOW);
-  delay(50);
-  httmPinLastState = digitalRead(httmOut);
-  digitalWrite(httmVcc, HIGH);
-
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject &jsonObj = jsonBuffer.createObject();
-  char JSONmessageBuffer[200];
-
-  jsonObj["state"] = false;
-  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
-  handleServerHeaders();
-  server_manager->send(200, "application/json", JSONmessageBuffer);
-}
-
-void handleOn2()
-{
-  Serial.println("ESP RELAY2 ON");
-  relay2State = HIGH;
-
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject &jsonObj = jsonBuffer.createObject();
-  char JSONmessageBuffer[200];
-
-  jsonObj["state"] = true;
-  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
-  handleServerHeaders();
-  server_manager->send(200, "application/json", JSONmessageBuffer);
-}
-
-void handleOff2()
-{
-  Serial.println("ESP RELAY2 OFF");
-  relay2State = LOW;
-
-  // Reset httm 2
-  digitalWrite(httm2Vcc, LOW);
-  delay(50);
-  httm2PinLastState = digitalRead(httm2Out);
-  digitalWrite(httm2Vcc, HIGH);
-
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject &jsonObj = jsonBuffer.createObject();
-  char JSONmessageBuffer[200];
-
-  jsonObj["state"] = false;
-  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
-  handleServerHeaders();
-  server_manager->send(200, "application/json", JSONmessageBuffer);
 }
 
 void handleNotFound()
@@ -199,66 +76,82 @@ void handleNotFound()
   server_manager->send(404, "text/plain", message);
 }
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
+#if defined(BUTTON)
+void handleScanButton()
 {
-  switch (type)
-  {
-  case WStype_DISCONNECTED:
-  {
-    Serial.printf("[%u] Disconnected!\n", num);
-    break;
-  }
-  case WStype_CONNECTED:
-  {
-    IPAddress ip = webSocket.remoteIP(num);
-    Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+  Serial.println("ESP SCAN");
+  StaticJsonBuffer<250> jsonBuffer;
+  JsonObject &jsonObj = jsonBuffer.createObject();
+  char JSONmessageBuffer[250];
 
-    // send message to client
-    webSocket.sendTXT(num, relayState == HIGH ? "on" : "off");
-    webSocket.sendTXT(num, relay2State == HIGH ? "on2" : "off2");
-    break;
-  }
-  case WStype_TEXT:
-  {
-    Serial.printf("[%u] action: %s\n", num, payload);
+  jsonObj["componentType"] = "button";
+  jsonObj["componentName"] = wifiNameString;
+  jsonObj["protocol"] = "ws";
+  jsonObj["address"] = "";
+  jsonObj["port"] = 81;
+  jsonObj["actionI"] = "on";
 
-    if (String((char *)payload) == "on" || String((char *)payload) == "off")
-    {
-      relayState = String((char *)payload) == "on" ? HIGH : LOW;
-    }
-    else if (String((char *)payload) == "on2" || String((char *)payload) == "off2")
-    {
-      relay2State = String((char *)payload) == "on2" ? HIGH : LOW;
-    }
+  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+  handleServerHeaders();
+  server_manager->send(200, "application/json", JSONmessageBuffer);
+}
+#elif defined(SWITCH)
+void handleScanSwitch()
+{
+  Serial.println("ESP SCAN");
+  StaticJsonBuffer<250> jsonBuffer;
+  JsonObject &jsonObj = jsonBuffer.createObject();
+  char JSONmessageBuffer[250];
 
-    break;
-  }
-  case WStype_BIN:
-  {
-    Serial.printf("[%u] get binary length: %u\n", num, length);
-    hexdump(payload, length);
+  jsonObj["componentType"] = "switch";
+  jsonObj["componentName"] = wifiNameString;
+  jsonObj["protocol"] = "ws";
+  jsonObj["address"] = "";
+  jsonObj["port"] = 81;
+  jsonObj["actionI"] = "on";
+  jsonObj["actionO"] = "off";
 
-    // send message to client
-    // webSocket.sendBIN(num, payload, length);
-    break;
-  }
-  }
+  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+  handleServerHeaders();
+  server_manager->send(200, "application/json", JSONmessageBuffer);
+}
+#elif defined(DOUBLE_SWITCH)
+void handleScanDoubleSwitch()
+{
+  Serial.println("ESP SCAN");
+  StaticJsonBuffer<250> jsonBuffer;
+  JsonObject &jsonObj = jsonBuffer.createObject();
+  char JSONmessageBuffer[250];
+
+  jsonObj["componentType"] = "double switch";
+  jsonObj["componentName"] = wifiNameString;
+  jsonObj["protocol"] = "ws";
+  jsonObj["address"] = "";
+  jsonObj["port"] = 81;
+  jsonObj["actionI"] = "on";
+  jsonObj["actionO"] = "off";
+  jsonObj["actionI2"] = "on2";
+  jsonObj["actionO2"] = "off2";
+
+  jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+  handleServerHeaders();
+  server_manager->send(200, "application/json", JSONmessageBuffer);
+}
+#endif
+
+void handleServerHeaders()
+{
+  // if (server_manager->method() == HTTP_OPTIONS)
+  // {
+  server_manager->sendHeader("Access-Control-Allow-Origin", "*");
+  server_manager->sendHeader("Access-Control-Max-Age", "10000");
+  server_manager->sendHeader("Access-Control-Allow-Methods", "PUT,POST,GET,OPTIONS");
+  server_manager->sendHeader("Access-Control-Allow-Headers", "*");
+  // }
 }
 
-void checkConnection()
+void handleClient()
 {
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.println("no connection...");
-    ESP.restart(); //ESP.reset();
-    delay(2000);
-  }
-}
-
-void configModeCallback(WiFiManager *myWiFiManager)
-{
-  Serial.println("Entered config mode");
-  Serial.println(String(WiFi.softAPIP()));
-  //if you used auto generated SSID, print it
-  Serial.println(String(myWiFiManager->getConfigPortalSSID()));
+  // constantly check for http requests
+  server_manager->handleClient();
 }
