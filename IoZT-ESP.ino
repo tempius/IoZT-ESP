@@ -1,4 +1,4 @@
-#define FIRMWARE_VERSION 1.02
+#define FIRMWARE_VERSION 1.002
 
 // #define BUTTON
 // #define SWITCH

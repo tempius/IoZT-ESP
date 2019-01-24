@@ -1,0 +1,7 @@
+
+{
+    "name": "IoZT-ESP",
+    "description": "(ESP8266 Core) firmware configuration to work with IoZT-APP",
+    "url": "https://github.com/tempius/IoZT-ESP",
+    "version": "1.002"
+}

@@ -1,5 +1,4 @@
 //needed for library
-#include <DNSServer.h>
 #include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
 
 void setupWifiManager()
