@@ -9,7 +9,6 @@
 #include <WebSocketsServer.h>
 //needed for library
 #include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 
 byte relON[] = {0xA0, 0x01, 0x01, 0xA2};  //Hex command to send to serial for open relay
@@ -25,7 +24,7 @@ int httm2PinLastState = LOW;
 int connectionTimeout = 180;
 
 /* vars */
-String wifiNameString = "IOZT-ESP#" + String(ESP.getChipId());
+String wifiNameString = "iozt-esp" + String(ESP.getChipId());
 const char *wifiName = wifiNameString.c_str();
 const char *wifiPass = "esp-iozt";
 int relayPin = 4;  // GPIO 4 - used to power up the relay

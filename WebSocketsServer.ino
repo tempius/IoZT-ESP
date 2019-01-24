@@ -35,7 +35,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         {
             relay2State = String((char *)payload) == "on2" ? HIGH : LOW;
         }
-
+        else if (String((char *)payload).startsWith("update="))
+        {
+            String url = String((char *)payload);
+            url.replace("update=", "");
+            updateFirmware(url);
+        }
         break;
     }
     case WStype_BIN:

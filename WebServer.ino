@@ -1,6 +1,5 @@
 //needed for library
 #include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 
 // Create an instance of the server
@@ -15,85 +14,20 @@ void setupWebserver()
     Serial.print(myIP);
     Serial.println();
 
-    MDNS.begin(wifiName);
-
 #if defined(BUTTON)
-    server_manager->on("/scan", HTTP_GET, handleScanButton);
+    server_manager->on("/", HTTP_GET, handleScanButton);
+    server_manager->on("/esp-scan", HTTP_GET, handleScanButton);
 #elif defined(SWITCH)
-    server_manager->on("/scan", HTTP_GET, handleScanSwitch);
+    server_manager->on("/", HTTP_GET, handleScanSwitch);
+    server_manager->on("/esp-scan", HTTP_GET, handleScanSwitch);
 #elif defined(DOUBLE_SWITCH)
-    server_manager->on("/scan", HTTP_GET, handleScanDoubleSwitch);
+    server_manager->on("/", HTTP_GET, handleScanDoubleSwitch);
+    server_manager->on("/esp-scan", HTTP_GET, handleScanDoubleSwitch);
 #endif
 
-    server_manager->on("/", HTTP_GET, handleRoot);
-    server_manager->on("/update", HTTP_POST, handleUpdateResponse, handleUpdateUpload);
     server_manager->on("/reset", HTTP_GET, handleReset);
     server_manager->onNotFound(handleNotFound);
     server_manager->begin();
-    MDNS.addService("http", "tcp", 80);
-
-    Serial.printf("Ready! Open http://%s.local in your browser\n", wifiName);
-}
-
-/* Just a little test message.  Go to http://192.168.4.1 in a web browser
-  connected to this access point to see it.
-*/
-void handleRoot()
-{
-    Serial.println("ESP ROOT");
-
-    StaticJsonBuffer<200> jsonBuffer;
-    JsonObject &jsonObj = jsonBuffer.createObject();
-    char JSONmessageBuffer[200];
-
-    jsonObj["wifi"] = wifiNameString;
-    jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
-
-    handleServerHeaders();
-    server_manager->send(200, "application/json", JSONmessageBuffer);
-}
-
-void handleUpdateResponse()
-{
-    server_manager->sendHeader("Connection", "close");
-    server_manager->send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-    ESP.restart();
-}
-
-void handleUpdateUpload()
-{
-    HTTPUpload &upload = server_manager->upload();
-    if (upload.status == UPLOAD_FILE_START)
-    {
-        Serial.setDebugOutput(true);
-        WiFiUDP::stopAll();
-        Serial.printf("Update: %s\n", upload.filename.c_str());
-        uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-        if (!Update.begin(maxSketchSpace))
-        { //start with max available size
-            Update.printError(Serial);
-        }
-    }
-    else if (upload.status == UPLOAD_FILE_WRITE)
-    {
-        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize)
-        {
-            Update.printError(Serial);
-        }
-    }
-    else if (upload.status == UPLOAD_FILE_END)
-    {
-        if (Update.end(true))
-        { //true to set the size to the current progress
-            Serial.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
-        }
-        else
-        {
-            Update.printError(Serial);
-        }
-        Serial.setDebugOutput(false);
-    }
-    yield();
 }
 
 void handleReset()
@@ -134,8 +68,8 @@ void handleScanButton()
     JsonObject &jsonObj = jsonBuffer.createObject();
     char JSONmessageBuffer[300];
 
+    jsonObj["firmware"] = FIRMWARE_VERSION;
     jsonObj["componentType"] = "button";
-    jsonObj["firmware"] = String(FIRMWARE_VERSION);
     jsonObj["componentName"] = wifiNameString;
     jsonObj["protocol"] = "ws";
     jsonObj["address"] = WiFi.localIP().toString();
@@ -154,8 +88,8 @@ void handleScanSwitch()
     JsonObject &jsonObj = jsonBuffer.createObject();
     char JSONmessageBuffer[300];
 
+    jsonObj["firmware"] = FIRMWARE_VERSION;
     jsonObj["componentType"] = "switch";
-    jsonObj["firmware"] = String(FIRMWARE_VERSION);
     jsonObj["componentName"] = wifiNameString;
     jsonObj["protocol"] = "ws";
     jsonObj["address"] = WiFi.localIP().toString();
@@ -175,8 +109,8 @@ void handleScanDoubleSwitch()
     JsonObject &jsonObj = jsonBuffer.createObject();
     char JSONmessageBuffer[300];
 
+    jsonObj["firmware"] = FIRMWARE_VERSION;
     jsonObj["componentType"] = "double switch";
-    jsonObj["firmware"] = String(FIRMWARE_VERSION);
     jsonObj["componentName"] = wifiNameString;
     jsonObj["protocol"] = "ws";
     jsonObj["address"] = WiFi.localIP().toString();
