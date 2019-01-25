@@ -69,8 +69,9 @@ void handleScanButton()
     char JSONmessageBuffer[300];
 
     jsonObj["firmware"] = FIRMWARE_VERSION;
-    jsonObj["componentType"] = "button";
-    jsonObj["componentName"] = wifiNameString;
+    jsonObj["type"] = "button";
+    jsonObj["name"] = wifiNameString;
+    jsonObj["esp"] = ESP.getChipId();
     jsonObj["protocol"] = "ws";
     jsonObj["address"] = WiFi.localIP().toString();
     jsonObj["port"] = 81;
@@ -89,8 +90,9 @@ void handleScanSwitch()
     char JSONmessageBuffer[300];
 
     jsonObj["firmware"] = FIRMWARE_VERSION;
-    jsonObj["componentType"] = "switch";
-    jsonObj["componentName"] = wifiNameString;
+    jsonObj["type"] = "switch";
+    jsonObj["name"] = wifiNameString;
+    jsonObj["esp"] = ESP.getChipId();
     jsonObj["protocol"] = "ws";
     jsonObj["address"] = WiFi.localIP().toString();
     jsonObj["port"] = 81;
@@ -110,15 +112,16 @@ void handleScanDoubleSwitch()
     char JSONmessageBuffer[300];
 
     jsonObj["firmware"] = FIRMWARE_VERSION;
-    jsonObj["componentType"] = "double switch";
-    jsonObj["componentName"] = wifiNameString;
+    jsonObj["type"] = "double switch";
+    jsonObj["name"] = wifiNameString;
+    jsonObj["esp"] = ESP.getChipId();
     jsonObj["protocol"] = "ws";
     jsonObj["address"] = WiFi.localIP().toString();
     jsonObj["port"] = 81;
     jsonObj["actionI"] = "on";
     jsonObj["actionO"] = "off";
-    jsonObj["actionI2"] = "on2";
-    jsonObj["actionO2"] = "off2";
+    jsonObj["actionI2"] = "on";
+    jsonObj["actionO2"] = "off";
 
     jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
     handleServerHeaders();

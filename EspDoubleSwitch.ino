@@ -58,7 +58,7 @@ void doubleSwitchLoop()
         // turns the relay ON
         Serial.write(relON, sizeof(relON));
         digitalWrite(relayPin, HIGH);
-        handleWebSocketsBroadcast("on");
+        handleWebSocketsBroadcast("state", "on");
     }
     else if (relayState == LOW && relayState != relayLastState)
     {
@@ -72,7 +72,7 @@ void doubleSwitchLoop()
         httmPinLastState = digitalRead(httmOut);
         digitalWrite(httmVcc, HIGH);
         // send state
-        handleWebSocketsBroadcast("off");
+        handleWebSocketsBroadcast("state", "off");
     }
     delay(1);
 
@@ -81,7 +81,7 @@ void doubleSwitchLoop()
         relay2LastState = relay2State;
         // turns the relay2 ON
         digitalWrite(relay2Pin, HIGH);
-        handleWebSocketsBroadcast("on2");
+        handleWebSocketsBroadcast("state2", "on");
     }
     else if (relay2State == LOW && relay2State != relay2LastState)
     {
@@ -94,7 +94,7 @@ void doubleSwitchLoop()
         httm2PinLastState = digitalRead(httm2Out);
         digitalWrite(httm2Vcc, HIGH);
         // send state
-        handleWebSocketsBroadcast("off2");
+        handleWebSocketsBroadcast("state2", "off");
     }
     delay(1);
 }

@@ -18,28 +18,39 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
 
+        StaticJsonBuffer<300> jsonBuffer;
+        JsonObject &jsonObj = jsonBuffer.createObject();
+        char JSONmessageBuffer[300];
+
+        jsonObj["state"] = relayState == HIGH ? "on" : "off";
+        jsonObj["state2"] = relay2State == HIGH ? "on" : "off";
+        jsonObj["name"] = wifiNameString;
+        jsonObj["esp"] = ESP.getChipId();
+        jsonObj["firmware"] = FIRMWARE_VERSION;
+
         // send message to client
-        webSocket.sendTXT(num, relayState == HIGH ? "on" : "off");
-        webSocket.sendTXT(num, relay2State == HIGH ? "on2" : "off2");
+        jsonObj.printTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+        webSocket.sendTXT(num, JSONmessageBuffer);
         break;
     }
     case WStype_TEXT:
     {
         Serial.printf("[%u] action: %s\n", num, payload);
 
-        if (String((char *)payload) == "on" || String((char *)payload) == "off")
+        StaticJsonBuffer<300> jsonBuffer;
+        JsonObject &jsonObj = jsonBuffer.parseObject(payload);
+
+        if (jsonObj["type"] == "state")
         {
-            relayState = String((char *)payload) == "on" ? HIGH : LOW;
+            relayState = jsonObj["msg"] == "on" ? HIGH : LOW;
         }
-        else if (String((char *)payload) == "on2" || String((char *)payload) == "off2")
+        else if (jsonObj["type"] == "state2")
         {
-            relay2State = String((char *)payload) == "on2" ? HIGH : LOW;
+            relay2State = jsonObj["msg"] == "on" ? HIGH : LOW;
         }
-        else if (String((char *)payload).startsWith("update="))
+        else if (jsonObj["type"] == "update")
         {
-            String url = String((char *)payload);
-            url.replace("update=", "");
-            updateFirmware(url);
+            httpFirmwareUpdate(jsonObj["msg"], jsonObj["fingerprint"]);
         }
         break;
     }
@@ -67,7 +78,18 @@ void handleWebSockets()
     webSocket.loop();
 }
 
-void handleWebSocketsBroadcast(String msg)
+void handleWebSocketsBroadcast(String type, String msg)
 {
-    webSocket.broadcastTXT(msg);
+    StaticJsonBuffer<300> jsonBuffer;
+    JsonObject &jsonObj = jsonBuffer.createObject();
+    char JSONmessageBuffer[300];
+
+    jsonObj[type] = msg;
+    jsonObj["name"] = wifiNameString;
+    jsonObj["esp"] = ESP.getChipId();
+    jsonObj["firmware"] = FIRMWARE_VERSION;
+
+    // send message to client
+    jsonObj.printTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+    webSocket.broadcastTXT(JSONmessageBuffer);
 }

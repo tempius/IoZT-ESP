@@ -24,7 +24,7 @@ void buttonLoop()
         // turns the relay ON
         Serial.write(relON, sizeof(relON));
         digitalWrite(relayPin, HIGH);
-        handleWebSocketsBroadcast("on");
+        handleWebSocketsBroadcast("state", "on");
     }
     else if (relayState == LOW && relayState != relayLastState)
     {
@@ -33,7 +33,7 @@ void buttonLoop()
         Serial.write(relOFF, sizeof(relOFF));
         digitalWrite(relayPin, LOW);
         // send state
-        handleWebSocketsBroadcast("off");
+        handleWebSocketsBroadcast("state", "off");
     }
     delay(1);
 }
